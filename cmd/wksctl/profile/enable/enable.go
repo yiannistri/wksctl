@@ -1,9 +1,10 @@
 package enable
 
 import (
-	"errors"
+	"fmt"
 	"path"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/wksctl/cmd/wksctl/profile/constants"
@@ -28,8 +29,8 @@ To disable auto-push, pass --push=false.
 }
 
 type profileEnableFlags struct {
-	gitUrl     string
-	revision   string
+	gitUrl     []string
+	revision   []string
 	push       bool
 	profileDir string
 }
@@ -38,8 +39,8 @@ var profileEnableParams profileEnableFlags
 
 func init() {
 	Cmd.Flags().StringVar(&profileEnableParams.profileDir, "profile-dir", "profiles", "specify a directory for storing profiles")
-	Cmd.Flags().StringVar(&profileEnableParams.gitUrl, "git-url", "", "enable profile from the gitUrl")
-	Cmd.Flags().StringVar(&profileEnableParams.revision, "revision", "master", "use this revision of the profile")
+	Cmd.Flags().StringSliceVar(&profileEnableParams.gitUrl, "git-url", []string{""}, "enable profile from the gitUrl")
+	Cmd.Flags().StringSliceVar(&profileEnableParams.revision, "revision", []string{"master"}, "use this revision of the profile")
 	Cmd.Flags().BoolVar(&profileEnableParams.push, "push", true, "auto push after enable the profile")
 }
 
@@ -50,9 +51,7 @@ func profileEnableArgs(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func profileEnableRun(params profileEnableFlags) error {
-	repoUrl := params.gitUrl
-
+func enableSingleProfile(profileDir, repoUrl, revision string) error {
 	if repoUrl == constants.AppDevAlias {
 		repoUrl = constants.AppDevRepoURL
 	}
@@ -65,14 +64,33 @@ func profileEnableRun(params profileEnableFlags) error {
 	if err != nil {
 		return err
 	}
-	clonePath := path.Join(params.profileDir, hostName, repoName)
+	clonePath := path.Join(profileDir, hostName, repoName)
 
 	log.Info("Adding the profile to the local repository...")
-	err = git.SubtreeAdd(clonePath, repoUrl, params.revision)
+	err = git.SubtreeAdd(clonePath, repoUrl, revision)
 	if err != nil {
 		return err
 	}
 	log.Info("Added the profile to the local repository.")
+
+	return nil
+}
+
+func profileEnableRun(params profileEnableFlags) error {
+	if len(params.gitUrl) != len(params.revision) {
+		return errors.New("length of Git URLs and Revisions don't match")
+	}
+
+	errs := []error{}
+	for i := 0; i < len(params.gitUrl); i++ {
+		err := enableSingleProfile(params.profileDir, params.gitUrl[i], params.revision[i])
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) != 0 {
+		return fmt.Errorf("profile enabling errors: %v", errs)
+	}
 
 	// The default behaviour is auto-commit and push
 	if params.push {
