@@ -24,7 +24,7 @@ require (
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
-	github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd // indirect
+	github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
@@ -33,6 +33,7 @@ require (
 	github.com/weaveworks/footloose v0.0.0-20190829132911-efbcbb7a6390
 	github.com/weaveworks/go-checkpoint v0.0.0-20170503165305-ebbb8b0518ab
 	github.com/weaveworks/launcher v0.0.0-20180824102238-59a4fcc32c9c
+	github.com/whilp/git-urls v0.0.0-20160530060445-31bac0d230fa
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0 // indirect
