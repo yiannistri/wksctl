@@ -343,6 +343,17 @@ func (o OS) CreateSeedNodeSetupPlan(params SeedNodeParams) (*plan.Plan, error) {
 	mManRsc := &resource.KubectlApply{Manifest: []byte(machinesManifest), Filename: object.String("machinesmanifest"), Namespace: object.String(params.Namespace)}
 	b.AddResource("kubectl:apply:machines", mManRsc, plan.DependOn(kubectlApplyDeps[0], kubectlApplyDeps[1:]...))
 
+	{
+		capiCtlrManifest, err := capiControllerManifest(params.Controller, params.Namespace, params.ConfigDirectory)
+		if err != nil {
+			return nil, err
+		}
+
+		dep := addSealedSecretWaitIfNecessary(b, params.SealedSecretKeyPath, params.SealedSecretCertPath)
+		ctlrRsc := &resource.KubectlApply{Manifest: capiCtlrManifest, Filename: object.String("capi_controller.yaml")}
+		b.AddResource("install:capi", ctlrRsc, plan.DependOn("kubectl:apply:cluster", dep))
+	}
+
 	wksCtlrManifest, err := wksControllerManifest(params.Controller, params.Namespace, params.ConfigDirectory)
 	if err != nil {
 		return nil, err
@@ -908,6 +919,26 @@ func createFluxSecretFromGitData(gitData GitParams, params SeedNodeParams) ([]by
 		return nil, errors.Wrap(err, "failed to process the git deploy key")
 	}
 	return replaceGitFields(fluxSecretTemplate, gitParams)
+}
+
+func capiControllerManifest(controller ControllerParams, namespace, configDir string) ([]byte, error) {
+	var file io.ReadCloser
+	filepath, err := findManifest(configDir, "capi-controller.yaml")
+	if err != nil {
+		file, err = manifests.Manifests.Open("04_capi_controller.yaml")
+	} else {
+		file, err = os.Open(filepath)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	manifestbytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	content, err := manifest.WithNamespace(string(manifestbytes), namespace)
+	return []byte(content), err
 }
 
 func wksControllerManifest(controller ControllerParams, namespace, configDir string) ([]byte, error) {
