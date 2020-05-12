@@ -1,7 +1,6 @@
 package v1alpha3
 
 import (
-	"github.com/weaveworks/wksctl/pkg/baremetal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,9 +40,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 func NewScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	if err := AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := baremetalproviderspec.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	return scheme, nil
